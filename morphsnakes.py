@@ -61,7 +61,9 @@ _P3[8][[0,1,2],[2,1,0],:] = 1
 
 _aux = np.zeros((0))
 def SI(u):
-    """SI operator."""
+    """SI operator.
+    Passando o levelset (matriz com 0 fora do contorno (inactive pixels) e 1 dentro do contorno (active pixels))
+    """
     global _aux
     if np.ndim(u) == 2:
         P = _P2
@@ -101,13 +103,15 @@ SIoIS = lambda u: SI(IS(u))
 ISoSI = lambda u: IS(SI(u))
 curvop = fcycle([SIoIS, ISoSI])
 
-# Stopping factors (function g(I) in the paper).
+# Stopping factors (function g(I) in the paper). 
+# EQ1 (MORPHOLOGICAL SNAKES)
 def gborders(img, alpha=1.0, sigma=1.0):
     """Stopping criterion for image borders."""
-    # The norm of the gradient.
+    # The norm of the gradient. |gradG(I) * Imagem|
     gradnorm = gaussian_gradient_magnitude(img, sigma, mode='constant')
     return 1.0/np.sqrt(1.0 + alpha*gradnorm)
 
+#EQ2 (MORPHOLOGICAL SNAKES)
 def glines(img, sigma=1.0):
     """Stopping criterion for image black lines."""
     return gaussian_filter(img, sigma)
@@ -204,17 +208,17 @@ class MorphGAC(object):
         balloon : scalar
             The strength of the morphological balloon. This is the parameter ν.
         """
-        self._u = None
-        self._v = balloon
-        self._theta = threshold
+        self._u = None #contorno C => levelset
+        self._v = balloon #direção da curva => p/ dentro ou p/ fora
+        self._theta = threshold #enquanto g(I) for maior, usa força do balão e movimenta curva, se for menor não movimenta a curva
         self.smoothing = smoothing
         
         self.set_data(data)
     
     def set_levelset(self, u):
         self._u = np.double(u)
-        self._u[u>0] = 1
-        self._u[u<=0] = 0
+        self._u[u>0] = 1 #pontos dentro da curva => objeto segmentado
+        self._u[u<=0] = 0 #pontos fora da curva => background
     
     def set_balloon(self, v):
         self._v = v
@@ -254,25 +258,27 @@ class MorphGAC(object):
         # Assign attributes to local variables for convenience.
         u = self._u
         gI = self._data
-        dgI = self._ddata
+        dgI = self._ddata #gradiente
         theta = self._theta
         v = self._v
         
         if u is None:
             raise ValueError("the levelset is not set (use set_levelset)")
         
-        res = np.copy(u)
+        res = np.copy(u) #contorno atual
         
         # Balloon.
+        #movimenta o balão
         if v > 0:
-            aux = binary_dilation(u, self.structure)
+            aux = binary_dilation(u, self.structure) #sup D_h
         elif v < 0:
-            aux = binary_erosion(u, self.structure)
+            aux = binary_erosion(u, self.structure) #inf E_h
         if v!= 0:
             res[self._threshold_mask_v] = aux[self._threshold_mask_v]
         
         # Image attachment.
         aux = np.zeros_like(res)
+        #faz o gradiente e move a evolui o levelset
         dres = np.gradient(res)
         for el1, el2 in zip(dgI, dres):
             aux += el1*el2
@@ -280,9 +286,10 @@ class MorphGAC(object):
         res[aux < 0] = 0
         
         # Smoothing.
+        #suaviza a curva nas bordas
         for i in range(self.smoothing):
             res = curvop(res)
-        
+        #atualiza curva atual
         self._u = res
     
     def run(self, iterations):

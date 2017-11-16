@@ -1,5 +1,6 @@
 
 import morphsnakes
+import levelset
 
 import numpy as np
 from scipy.misc import imread
@@ -9,12 +10,33 @@ def rgb2gray(img):
     """Convert a RGB image to gray scale."""
     return 0.2989*img[:,:,0] + 0.587*img[:,:,1] + 0.114*img[:,:,2]
 
-def circle_levelset(shape, center, sqradius, scalerow=1.0):
+def circle_levelset(shape, center, sqradius):
     """Build a binary function with a circle as the 0.5-levelset."""
     grid = np.mgrid[list(map(slice, shape))].T - center
     phi = sqradius - np.sqrt(np.sum((grid.T)**2, 0))
     u = np.float_(phi > 0)
     return u
+
+def initial_phi(shape):
+    c0=4
+    w=4
+    nrow, ncol=shape
+    phi=c0*np.ones((nrow,ncol))
+    phi[w+1:-w-1, w+1:-w-1]=-c0
+    return phi
+
+
+def test_trad_levelset():
+    img = imread("testimages/twoObj.bmp")
+
+    g = levelset.border(img)
+
+    ls = levelset.Levelset(g)
+    ls.levelset = initial_phi(img.shape)
+
+    ppl.figure()
+    morphsnakes.evolve_visual(ls, num_iters=150, background=img)
+
 
 def test_nodule():
     # Load the image.
@@ -32,12 +54,15 @@ def test_nodule():
     morphsnakes.evolve_visual(mgac, num_iters=45, background=img)
 
 def test_obj():
+    #fazer dump do g(I) verificar bordas
+    #verificar parametros, anotar todos os parametros usados nos testes
+    #como fazer o dump dos resultados para comparacao? Somente visual?
     img = imread("testimages/twoObj.bmp")/255.0
 
     gI = morphsnakes.gborders(img, alpha=1000, sigma=5)
 
     mgac = morphsnakes.MorphGAC(gI, smoothing=3, threshold=0.23, balloon=-1)
-    mgac.levelset = circle_levelset(img.shape, (img.shape[0]/2, img.shape[1]/2), 50, scalerow=0.75)
+    mgac.levelset = circle_levelset(img.shape, (img.shape[0]/2, img.shape[1]/2), 50)
 
     ppl.figure()
     morphsnakes.evolve_visual(mgac, num_iters=100, background=img)
@@ -52,7 +77,7 @@ def test_starfish():
     
     # Morphological GAC. Initialization of the level-set.
     mgac = morphsnakes.MorphGAC(gI, smoothing=2, threshold=0.3, balloon=-1)
-    mgac.levelset = circle_levelset(img.shape, (163, 137), 135, scalerow=0.75)
+    mgac.levelset = circle_levelset(img.shape, (163, 137), 135)
     
     # Visual evolution.
     ppl.figure()
@@ -87,8 +112,9 @@ def test_confocal3d():
 
 if __name__ == '__main__':
     print("""""")
-    test_nodule()
-    test_obj()
+    test_trad_levelset()
+    #test_nodule()
+    #test_obj()
     #test_lakes()
     #test_starfish()
     ppl.show()
