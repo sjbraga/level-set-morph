@@ -46,7 +46,7 @@ class Levelset(object):
         self.max_iter = max_iter
 
     def set_levelset(self, u):
-        #self._u = np.double(u)
+        self._u = np.double(u)
         self._u[u>0] = 1
         self._u[u<=0] = 0
 

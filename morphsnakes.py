@@ -130,7 +130,7 @@ class MorphACWE(object):
             The number of repetitions of the smoothing step (the
             curv operator) in each iteration. In other terms,
             this is the strength of the smoothing. This is the
-            parameter µ.
+            parameter µ. -> baixo para obj pequenos e alto para obj grandes
         lambda1, lambda2 : scalars
             Relative importance of the inside pixels (lambda1)
             against the outside pixels (lambda2).
@@ -160,6 +160,8 @@ class MorphACWE(object):
             raise ValueError("the levelset function is not set (use set_levelset)")
         
         data = self.data
+
+        # nao precisa do passo 1 (?)
         
         # Determine c0 and c1.
         inside = u>0
@@ -171,6 +173,8 @@ class MorphACWE(object):
         dres = np.array(np.gradient(u))
         abs_dres = np.abs(dres).sum(0)
         #aux = abs_dres * (c0 - c1) * (c0 + c1 - 2*data)
+        # evolucao da curva EQ 32 morphological approach...
+        # segundo passo
         aux = abs_dres * (self.lambda1*(data - c1)**2 - self.lambda2*(data - c0)**2)
         
         res = np.copy(u)
@@ -178,6 +182,7 @@ class MorphACWE(object):
         res[aux > 0] = 0
         
         # Smoothing.
+        #terceiro passo EQ 32
         for i in range(self.smoothing):
             res = curvop(res)
         
@@ -201,7 +206,7 @@ class MorphGAC(object):
             The stopping criterion g(I). See functions gborders and glines.
         smoothing : scalar
             The number of repetitions of the smoothing step in each
-            iteration. This is the parameter µ.
+            iteration. This is the parameter µ. -> baixo para obj pequenos e alto para obj grandes
         threshold : scalar
             The threshold that determines which areas are affected
             by the morphological balloon. This is the parameter θ.
