@@ -217,6 +217,7 @@ class MorphGAC(object):
         self._v = balloon #direção da curva => p/ dentro ou p/ fora
         self._theta = threshold #enquanto g(I) for maior, usa força do balão e movimenta curva, se for menor não movimenta a curva
         self.smoothing = smoothing
+        self.name = "Morphological GAC"
         
         self.set_data(data)
     
@@ -301,95 +302,3 @@ class MorphGAC(object):
         """Run several iterations of the morphological snakes method."""
         for i in range(iterations):
             self.step()
-    
-
-def evolve_visual(msnake, levelset=None, num_iters=20, background=None):
-    """
-    Visual evolution of a morphological snake.
-    
-    Parameters
-    ----------
-    msnake : MorphGAC or MorphACWE instance
-        The morphological snake solver.
-    levelset : array-like, optional
-        If given, the levelset of the solver is initialized to this. If not
-        given, the evolution will use the levelset already set in msnake.
-    num_iters : int, optional
-        The number of iterations.
-    background : array-like, optional
-        If given, background will be shown behind the contours instead of
-        msnake.data.
-    """
-    from matplotlib import pyplot as ppl
-    
-    if levelset is not None:
-        msnake.levelset = levelset
-    
-    # Prepare the visual environment.
-    fig = ppl.gcf()
-    fig.clf()
-    ax1 = fig.add_subplot(1,2,1)
-    if background is None:
-        ax1.imshow(msnake.data, cmap=ppl.cm.gray)
-    else:
-        ax1.imshow(background, cmap=ppl.cm.gray)
-    ax1.contour(msnake.levelset, [0.5], colors='r')
-    
-    ax2 = fig.add_subplot(1,2,2)
-    ax_u = ax2.imshow(msnake.levelset)
-    ppl.pause(0.001)
-    
-    # Iterate.
-    for i in range(num_iters):
-        # Evolve.
-        msnake.step()
-        
-        # Update figure.
-        del ax1.collections[0]
-        ax1.contour(msnake.levelset, [0.5], colors='r')
-        ax_u.set_data(msnake.levelset)
-        fig.canvas.draw()
-        #ppl.pause(0.001)
-    
-    # Return the last levelset.
-    return msnake.levelset
-
-def evolve_visual3d(msnake, levelset=None, num_iters=20):
-    """
-    Visual evolution of a three-dimensional morphological snake.
-    
-    Parameters
-    ----------
-    msnake : MorphGAC or MorphACWE instance
-        The morphological snake solver.
-    levelset : array-like, optional
-        If given, the levelset of the solver is initialized to this. If not
-        given, the evolution will use the levelset already set in msnake.
-    num_iters : int, optional
-        The number of iterations.
-    """
-    from mayavi import mlab
-    import matplotlib.pyplot as ppl
-    
-    if levelset is not None:
-        msnake.levelset = levelset
-    
-    fig = mlab.gcf()
-    mlab.clf()
-    src = mlab.pipeline.scalar_field(msnake.data)
-    mlab.pipeline.image_plane_widget(src, plane_orientation='x_axes', colormap='gray')
-    cnt = mlab.contour3d(msnake.levelset, contours=[0.5])
-    
-    @mlab.animate(ui=True)
-    def anim():
-        for i in range(num_iters):
-            msnake.step()
-            cnt.mlab_source.scalars = msnake.levelset
-            print("Iteration %s/%s..." % (i + 1, num_iters))
-            yield
-    
-    anim()
-    mlab.show()
-    
-    # Return the last levelset.
-    return msnake.levelset
