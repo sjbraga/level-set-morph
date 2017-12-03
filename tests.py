@@ -1,14 +1,16 @@
-
 import morphsnakes
 import levelset
+import visual
 
 import numpy as np
 from scipy.misc import imread
 from matplotlib import pyplot as ppl
+from PIL import Image
 
 def rgb2gray(img):
     """Convert a RGB image to gray scale."""
-    return 0.2989*img[:,:,0] + 0.587*img[:,:,1] + 0.114*img[:,:,2]
+    return np.dot(img[...,:3], [0.299, 0.587, 0.114])
+
 
 def circle_levelset(shape, center, sqradius):
     """Build a binary function with a circle as the 0.5-levelset."""
@@ -17,28 +19,41 @@ def circle_levelset(shape, center, sqradius):
     u = np.float_(phi > 0)
     return u
 
-def initial_phi(shape):
+def initial_phi(shape, w1=4, w2=4):
     c0=4
-    w=4
     nrow, ncol=shape
     phi=c0*np.ones((nrow,ncol))
-    phi[w+1:-w-1, w+1:-w-1]=-c0
+    phi[w1+5:-w1-1, w2+1:-w2-1]=-c0
     return phi
 
 
-def test_trad_levelset():
-    img = imread("testimages/twoObj.bmp")
 
+
+def test_trad_levelset_obj():
+    img = ppl.imread("testimages/twoObj.bmp")
+    
     g = levelset.border(img)
 
     ls = levelset.Levelset(g)
     ls.levelset = initial_phi(img.shape)
 
     ppl.figure()
-    morphsnakes.evolve_visual(ls, num_iters=150, background=img)
+    return visual.evolve_visual(ls, num_iters=150, background=img)
+
+def test_trad_nodule():
+    img = ppl.imread("testimages/mama07ORI.bmp")
+    imgbw = rgb2gray(img)
+
+    g = levelset.border(imgbw, sigma=50.0, h=8)
+
+    ls = levelset.Levelset(g, step=1, v=-1)
+    ls.levelset = initial_phi(imgbw.shape, 120, 110)
+
+    ppl.figure()
+    visual.evolve_visual(ls, num_iters=400, background=imgbw)
 
 
-def test_nodule():
+def test_morph_nodule():
     # Load the image.
     img = imread("testimages/mama07ORI.bmp")[...,0]/255.0
     
@@ -51,70 +66,29 @@ def test_nodule():
     
     # Visual evolution.
     ppl.figure()
-    morphsnakes.evolve_visual(mgac, num_iters=45, background=img)
+    visual.evolve_visual(mgac, num_iters=45, background=img)
 
-def test_obj():
-    #fazer dump do g(I) verificar bordas
-    #verificar parametros, anotar todos os parametros usados nos testes
-    #como fazer o dump dos resultados para comparacao? Somente visual?
+def test_morph_obj():
     img = imread("testimages/twoObj.bmp")/255.0
 
-    gI = morphsnakes.gborders(img, alpha=1000, sigma=5)
+    gI = morphsnakes.gborders(img, alpha=1000, sigma=1)
 
-    mgac = morphsnakes.MorphGAC(gI, smoothing=3, threshold=0.23, balloon=-1)
-    mgac.levelset = circle_levelset(img.shape, (img.shape[0]/2, img.shape[1]/2), 50)
+    # ppl.hist(gI, normed=True)
+
+    mgac = morphsnakes.MorphGAC(gI, smoothing=1, threshold=0.28, balloon=-1)
+    mgac.levelset = circle_levelset(img.shape, (40,40), 40)
 
     ppl.figure()
-    morphsnakes.evolve_visual(mgac, num_iters=100, background=img)
+    return visual.evolve_visual(mgac, num_iters=40, background=img, save_every_iter=10)
 
-def test_starfish():
-    # Load the image.
-    imgcolor = imread("testimages/seastar2.png")/255.0
-    img = rgb2gray(imgcolor)
-    
-    # g(I)
-    gI = morphsnakes.gborders(img, alpha=1000, sigma=2)
-    
-    # Morphological GAC. Initialization of the level-set.
-    mgac = morphsnakes.MorphGAC(gI, smoothing=2, threshold=0.3, balloon=-1)
-    mgac.levelset = circle_levelset(img.shape, (163, 137), 135)
-    
-    # Visual evolution.
-    ppl.figure()
-    morphsnakes.evolve_visual(mgac, num_iters=110, background=imgcolor)
-
-def test_lakes():
-    # Load the image.
-    imgcolor = imread("testimages/lakes3.jpg")/255.0
-    img = rgb2gray(imgcolor)
-    
-    # MorphACWE does not need g(I)
-    
-    # Morphological ACWE. Initialization of the level-set.
-    macwe = morphsnakes.MorphACWE(img, smoothing=3, lambda1=1, lambda2=1)
-    macwe.levelset = circle_levelset(img.shape, (80, 170), 25)
-    
-    # Visual evolution.
-    ppl.figure()
-    morphsnakes.evolve_visual(macwe, num_iters=190, background=imgcolor)
-
-def test_confocal3d():
-    
-    # Load the image.
-    img = np.load("testimages/confocal.npy")
-    
-    # Morphological ACWE. Initialization of the level-set.
-    macwe = morphsnakes.MorphACWE(img, smoothing=1, lambda1=1, lambda2=2)
-    macwe.levelset = circle_levelset(img.shape, (30, 50, 80), 25)
-    
-    # Visual evolution.
-    morphsnakes.evolve_visual3d(macwe, num_iters=200)
 
 if __name__ == '__main__':
     print("""""")
-    test_trad_levelset()
-    #test_nodule()
-    #test_obj()
-    #test_lakes()
-    #test_starfish()
+    # test_trad_levelset_obj()
+    # test_morph_obj()
+
+    test_trad_nodule()
+    # test_morph_nodule()
+
+
     ppl.show()

@@ -2,21 +2,20 @@ import numpy as np
 import scipy.signal as signal
 
 
-def gauss_kern():
+def gauss_kern(sigma,h):
     """ Returns a normalized 2D gauss kernel array for convolutions """
-    h1 = 8
-    h2 = 8
+    h1 = h
+    h2 = h
     x, y = np.mgrid[0:h2, 0:h1]
     x = x-h2/2
     y = y-h1/2
-    sigma = 10.0
+    # sigma = 10.0
     g = np.exp( -( x**2 + y**2 ) / (2*sigma**2) )
     return g / g.sum()
 
-def border(img):
+def border(img,sigma=10.0,h=8):
     """Funcao de parada das bordas"""
-    img = img[::-1]
-    g = gauss_kern()
+    g = gauss_kern(sigma,h)
     img_smooth = signal.convolve(img, g, mode='same')
     Iy, Ix = np.gradient(img_smooth)
     absGradI=np.sqrt(Ix**2+Iy**2)
@@ -27,7 +26,7 @@ class Levelset(object):
     """
     Traditional levelset implementation
     """
-    def __init__(self, borderFunc, step=1, num_reinit=10, max_iter=150):
+    def __init__(self, borderFunc, step=1, max_iter=150, v=1):
         """
         Create traditional levelset solver
 
@@ -38,12 +37,14 @@ class Levelset(object):
         :step: step size
         :num_reinit: number of iterations to reset levelset function
         :max_iter: max number of iterations for contour evolution
+        :v: balloon force
         """
-        self._u = None #contorno C => levelset
-        self.borders = borderFunc
+        self._u = None # contorno C => levelset
+        self.data = borderFunc # funcao da borda
         self.step_size = step
-        self.num_reinit = num_reinit
         self.max_iter = max_iter
+        self.name = "Traditional Levelset"
+        self.v = v
 
     def set_levelset(self, u):
         self._u = np.double(u)
@@ -56,9 +57,10 @@ class Levelset(object):
 
     def step(self):
         phi = self._u #contorno
-        g = self.borders #funcao de borda
+        g = self.data #funcao de borda
         gy, gx = np.gradient(g)
         dt = self.step_size
+        vBalloon = self.v
 
         if phi is None:
             raise ValueError("levelset not set")
@@ -77,8 +79,8 @@ class Levelset(object):
         # curvature is the divergence of normalized gradient of phi
         K = divXnormGradPhiX + divYnormGradPhiY
         tmp1 = g * K * absGradPhi
-        tmp2 = g * absGradPhi
-        tmp3 = gx * gradPhiX + gy*gradPhiY
+        tmp2 = g * absGradPhi * vBalloon
+        tmp3 = gx * gradPhiX + gy * gradPhiY
         dPhiBydT =tmp1 + tmp2 + tmp3    
 
         #curve evolution
