@@ -2,7 +2,7 @@ import numpy as np
 from scipy.misc import imread
 from matplotlib import pyplot as ppl
 
-def evolve_visual(msnake, levelset=None, num_iters=20, background=None, save_img=False, save_every_iter=20):
+def evolve_visual(msnake, levelset=None, num_iters=20, background=None, save_img=False, save_every_iter=20, show_axe3=False):
     """
     Visual evolution of a morphological snake.
     
@@ -39,8 +39,9 @@ def evolve_visual(msnake, levelset=None, num_iters=20, background=None, save_img
     ax2 = fig.add_subplot(1,2,2)
     ax_u = ax2.imshow(msnake.levelset)
 
-    ax3 = fig.add_subplot(1,3,2)
-    ax_b = ax3.imshow(msnake.data)
+    if show_axe3 == True:
+        ax3 = fig.add_subplot(1,3,2)
+        ax_b = ax3.imshow(msnake.data)
 
     ppl.pause(0.001)
     

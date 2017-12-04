@@ -50,7 +50,7 @@ def test_trad_nodule():
     ls.levelset = initial_phi(imgbw.shape, 120, 110)
 
     ppl.figure()
-    visual.evolve_visual(ls, num_iters=400, background=imgbw)
+    visual.evolve_visual(ls, num_iters=400, background=imgbw, save_every_iter=50, save_img=True, show_axe3=True)
 
 
 def test_morph_nodule():
@@ -66,7 +66,7 @@ def test_morph_nodule():
     
     # Visual evolution.
     ppl.figure()
-    visual.evolve_visual(mgac, num_iters=45, background=img)
+    visual.evolve_visual(mgac, num_iters=45, background=img, save_every_iter=5, save_img=True, show_axe3=False)
 
 def test_morph_obj():
     img = imread("testimages/twoObj.bmp")/255.0
@@ -87,8 +87,8 @@ if __name__ == '__main__':
     # test_trad_levelset_obj()
     # test_morph_obj()
 
-    test_trad_nodule()
-    # test_morph_nodule()
+    # test_trad_nodule()
+    test_morph_nodule()
 
 
     ppl.show()
