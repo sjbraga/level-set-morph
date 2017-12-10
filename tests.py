@@ -44,13 +44,13 @@ def test_trad_nodule():
     img = ppl.imread("testimages/mama07ORI.bmp")
     imgbw = rgb2gray(img)
 
-    g = levelset.border(imgbw, sigma=50.0, h=8)
+    g = levelset.border(imgbw, sigma=10.0, h=12)
 
     ls = levelset.Levelset(g, step=1, v=-1)
     ls.levelset = initial_phi(imgbw.shape, 120, 110)
 
     ppl.figure()
-    visual.evolve_visual(ls, num_iters=400, background=imgbw, save_every_iter=50, save_img=True, show_axe3=True)
+    visual.evolve_visual(ls, num_iters=200, background=imgbw, save_every_iter=50, save_img=True, show_axe3=False)
 
 
 def test_morph_nodule():
@@ -87,8 +87,8 @@ if __name__ == '__main__':
     # test_trad_levelset_obj()
     # test_morph_obj()
 
-    # test_trad_nodule()
-    test_morph_nodule()
+    test_trad_nodule()
+    # test_morph_nodule()
 
 
     ppl.show()
